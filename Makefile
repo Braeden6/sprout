@@ -1,5 +1,3 @@
-
-
 install:
 	brew install python@3.13 && \
 	brew install uv
@@ -17,3 +15,14 @@ run:
 	source .venv/bin/activate && \
 	cd backend && \
 	uvicorn app.main:app --reload --host 0.0.0.0
+
+
+
+run-frontend:
+	cd frontend && pnpm run dev
+
+build-frontend-docker:
+	cd frontend && docker build --target production -t sprout-frontend .
+
+run-frontend-docker:
+	docker run -p 80:80 sprout-frontend

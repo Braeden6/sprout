@@ -5,14 +5,16 @@ import {
   DndContext,
   DragOverlay,
   useDraggable,
-  useDroppable,
-  closestCenter,
+  useDroppable
 } from '@dnd-kit/core';
 import type {
   DragEndEvent,
   DragOverEvent,
   DragStartEvent,
 } from '@dnd-kit/core';
+import { GameLayout } from '../components/GameLayout';
+import { useHelpButtonStore } from '@/stores/helpButtonStore';
+import { useTimerStore } from '@/stores/timerStore';
 
 export const Route = createFileRoute('/game')({
   component: Game,
@@ -53,7 +55,7 @@ interface DraggableShapeProps {
   shape: Shape
 }
 
-
+// tech debt: remove this game wont be used anymore
 function DraggableShape({ shape }: DraggableShapeProps) {
   const {
     attributes,
@@ -105,6 +107,8 @@ function DraggableShape({ shape }: DraggableShapeProps) {
 const GRID_SIZE = 2;
 
 function Game() {
+    const { enableHelp } = useHelpButtonStore();
+    const { startTimer } = useTimerStore();
     const [timeLeft, setTimeLeft] = useState(5 * 60);
     const [shapes, setShapes] = useState<Shape[]>([]);
     const [grid, setGrid] = useState<(Shape|null)[]>(Array(GRID_SIZE * GRID_SIZE).fill(null));
@@ -129,6 +133,10 @@ function Game() {
             isPlaced: false,
         }))
         setShapes(initialShapes)
+        enableHelp(3, () => {
+            console.log("Help button clicked");
+        });
+        startTimer(5 * 60);
     }, [])
 
     useEffect(() => {
@@ -140,12 +148,6 @@ function Game() {
 
         return () => clearInterval(timer)
     }, [timeLeft])
-
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60)
-        const secs = seconds % 60
-        return `${mins}:${secs.toString().padStart(2, '0')}`
-    }
 
     const getHelp = () => {
         console.log('clicked')
@@ -178,61 +180,45 @@ function Game() {
     const activeShape = shapes.find(shape => shape.id === activeId)
     const unplacedShapes = shapes.filter(shape => !shape.isPlaced)
 
-  return (
-    <DndContext
-    //   collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragOver={handleDragOver}
-    >
-      <div className="min-h-screen flex items-center justify-center p-4">
-          {/* Ask Help Button Top Left */}
-          <Button className="absolute top-[6vh] left-[6vw] z-10 bg-blue-400 w-[180px] h-[180px] rounded-full hover:bg-blue-400 text-4xl text-wrap border-20 border-blue-300" onClick={getHelp}>
-              ASK<br/>HELP
-          </Button>
+    return (
+        <DndContext
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragOver={handleDragOver}
+        >
+            <div className="min-h-screen flex items-center justify-center p-4">
 
-        <img src="/game_bg.jpg" alt="Game" className="absolute inset-0 w-full h-full object-cover -z-10" />
-        <div className="absolute top-[10vh] left-1/2 -translate-x-1/2 z-10 w-[70vw] h-[70vh]">
-          <img src="/test.svg" alt="Game" className="w-full h-full" />
+                <GameLayout showTimer>
+                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-${GRID_SIZE} gap-4 w-[25vw] h-[40vh] p-8`}>
+                        {
+                            grid.map((shape, index) => (
+                                <DroppableSquare key={index} id={`square-${index}`}>
+                                    {shape && (
+                                        <DraggableShape shape={shape} />
+                                    )}
+                                </DroppableSquare>
+                            ))
+                        }
+                    </div>
 
-          {/* Timer Top Center */}
-          <div className="absolute inset-20 bg-transparent">
-              <div className="absolute -top-[10vh] left-1/2 -translate-x-1/2 text-8xl border-5 border-red-500 bg-white rounded-md p-2">
-                  {formatTime(timeLeft)}
-              </div>
-          </div>
+                    {/* Render unplaced draggable shapes */}
+                    {unplacedShapes.map((shape) => (
+                        <DraggableShape key={shape.id} shape={shape} />
+                    ))}
+                </GameLayout>
 
-          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-${GRID_SIZE} gap-4 w-[25vw] h-[40vh] p-8`}>
-              {
-                grid.map((shape, index) => (
-                    <DroppableSquare id={`square-${index}`}>
-                        {shape && (
-                            <DraggableShape shape={shape} />
-                        )}
-                    </DroppableSquare>
-                ))
-              }
-          </div>
-
-          {/* Render unplaced draggable shapes */}
-          {unplacedShapes.map((shape) => (
-            <DraggableShape key={shape.id} shape={shape} />
-          ))}
-
-       </div>
-
-       <DragOverlay>
-         {activeShape && (
-           <img
-             src={activeShape.src}
-             alt="Shape"
-             className="w-[100px] h-[100px] object-contain opacity-75"
-           />
-         )}
-       </DragOverlay>
-      </div>
-    </DndContext>
-  )
+                <DragOverlay>
+                    {activeShape && (
+                        <img
+                            src={activeShape.src}
+                            alt="Shape"
+                            className="w-[100px] h-[100px] object-contain opacity-75"
+                        />
+                    )}
+                </DragOverlay>
+            </div>
+        </DndContext>
+    )
 }
 
 

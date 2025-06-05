@@ -1,0 +1,20 @@
+import { useHelpButtonStore } from "@/stores/helpButtonStore";
+import { Button } from "./ui/button";
+
+interface HelpButtonProps {
+    className?: string
+}
+
+export function HelpButton({ className = "" }: HelpButtonProps) {
+    const { helpCount, helpFunction } = useHelpButtonStore()
+    return helpCount > 0 &&
+        <Button className={`absolute top-[6vh] left-[6vw] z-10 bg-blue-400 w-[150px] h-[150px] rounded-full hover:bg-blue-400 text-4xl text-wrap border-20 border-blue-300 ${className}`} onClick={helpFunction}>
+            <div className="absolute top-0 right-0 text-2xl bg-blue-500 rounded-full w-[40px] h-[40px] flex flex-col text-center justify-center items-center translate-x-2/3 -translate-y-1/2">
+                {helpCount}
+            </div>
+            <div className="flex flex-col items-center">
+                <span>ASK</span>
+                <span>HELP</span>
+            </div>
+        </Button> 
+}
