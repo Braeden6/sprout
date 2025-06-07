@@ -26,3 +26,14 @@ build-frontend-docker:
 
 run-frontend-docker:
 	docker run -p 80:80 sprout-frontend
+
+
+db-generate:
+	source .venv/bin/activate && \
+	cd backend && \
+	alembic revision --autogenerate -m "message"
+
+db-migrate:
+	source .venv/bin/activate && \
+	cd backend && \
+	alembic upgrade head

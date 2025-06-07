@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from app.src.features.users.model import User
+from fastapi import FastAPI, Depends
 from fastapi.responses import FileResponse
+from uuid import uuid4
 from google.adk.agents import Agent
 from google.adk.tools import google_search
 # from google.adk.models.lite_llm import LiteLlm # For multi-model support
@@ -7,22 +9,11 @@ from google.adk.sessions import InMemorySessionService, DatabaseSessionService
 from google.adk.runners import Runner
 from google.genai import types
 import random
-from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
+from app.src.core.settings import settings
+from app.src.core.auth import get_current_user
 
 load_dotenv()
-
-class Settings(BaseSettings):
-    db_url: str = "postgresql://postgres:postgres@localhost:5432/sprout"
-    google_api_key: str
-    google_genai_use_vertexai: str
-    
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        
-
-settings = Settings()
 
 def get_random_number_betweeen(min: int, max: int) -> int:
     """Retrieves a random number between a specified minimum and maximum.
@@ -57,8 +48,8 @@ root_agent = Agent(
         ]
 )
 
-user_id = "test134"
-session_id = "190a8455-5508-4648-ac14-b606c7f8b001"
+
+# Remove hardcoded user_id - now it will be dynamic based on auth
 app_name = "sprout"
 
 database_session_service = DatabaseSessionService(
@@ -87,56 +78,46 @@ async def call_agent(query: str, runner: Runner, user_id: str, session_id: str):
 
 
 
-async def lifespan(app: FastAPI):
-    sessions = await database_session_service.list_sessions(
-        app_name=app_name,
-        user_id=user_id
-    )
-    if not len(sessions.sessions):
-        new_session = await database_session_service.create_session(
-            app_name=app_name,
-            user_id=user_id,
-            session_id=session_id
-        )
-    else:
-        new_session = sessions.sessions[0]
-    app.state.session_id = new_session.id
-    yield
     
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 @app.get("/chat/history")
-async def get_chat_history():
+async def get_chat_history(current_user: User = Depends(get_current_user)):
     session = await database_session_service.get_session(
         app_name=app_name,
-        user_id=user_id,
-        session_id=app.state.session_id
+        user_id=current_user.id,
+        session_id=current_user.session_token
     )
     return {
         "chat_history": [event.content.parts[0].text for event in session.events]
     }
     
 @app.delete("/chat/clear")
-async def clear_chat_history():
+async def clear_chat_history(current_user: User = Depends(get_current_user)):
     await database_session_service.delete_session(
         app_name=app_name,
-        user_id=user_id,
-        session_id=app.state.session_id
+        user_id=current_user.id,
+        session_id=current_user.session_token
     )
-    new_session = await database_session_service.create_session(
-        app_name=app_name,
-        user_id=user_id,
-        session_id=session_id
-    )
-    app.state.session_id = new_session.id
-    
-    
-    
+    return {"message": "Chat history cleared"}
 
 @app.get("/")
-async def root(question: str):
+async def root(question: str, current_user: User = Depends(get_current_user)):
     final_response_text = await call_agent(
-        question, runner, user_id, app.state.session_id
+        question, runner, current_user.id, current_user.session_token
     )
     
     return final_response_text
+
+
+@app.get('/auth/new')
+async def new_auth():
+    new_token = uuid4().hex
+    return {
+        "id": uuid4(),
+        "session_token": new_token}
+    
+
+@app.get("/auth/me")
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    return  current_user
