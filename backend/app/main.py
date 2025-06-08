@@ -1,4 +1,5 @@
 from app.src.features.users.model import User
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends
 from fastapi.responses import FileResponse
 from uuid import uuid4
@@ -12,6 +13,8 @@ import random
 from dotenv import load_dotenv
 from app.src.core.settings import settings
 from app.src.core.auth import get_current_user
+from pydantic import BaseModel
+import random
 
 load_dotenv()
 
@@ -49,8 +52,18 @@ root_agent = Agent(
 )
 
 
-# Remove hardcoded user_id - now it will be dynamic based on auth
+# ask for help
+# completion check??
+
+
 app_name = "sprout"
+emotions = [
+    "angry",
+    "happy",
+    "sad",
+    "scared"
+]
+people = [1,2]
 
 database_session_service = DatabaseSessionService(
     db_url=settings.db_url
@@ -76,10 +89,44 @@ async def call_agent(query: str, runner: Runner, user_id: str, session_id: str):
                 
     return final_response_text
 
-
-
-    
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class GameState(BaseModel):
+    session_id: str
+    emotions: list[str]
+    image_paths: list[str]
+    emotion_options: list[str]
+
+
+@app.get("/games/face/init")
+async def init_game(current_user: User = Depends(get_current_user)) -> GameState:
+    sample_emotions = random.sample(emotions,4)
+    sample_people = [random.choice(people) for _ in range(4)]
+    
+    session = await database_session_service.create_session(
+        app_name=app_name,
+        user_id=str(current_user.id)
+    )
+    emotion_options = sample_emotions.copy()
+    random.shuffle(emotion_options)
+    
+    return {
+        "session_id": session.id,
+        "emotions": sample_emotions,
+        "emotion_options": emotion_options,
+        "image_paths": [f"/emotions/{person}/{emotions.index(emotion)+1}.png" for emotion, person in zip(sample_emotions, sample_people)]
+    }
+
+
 
 @app.get("/chat/history")
 async def get_chat_history(current_user: User = Depends(get_current_user)):

@@ -1,8 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
+import { OpenAPI } from '@/api/generated/core/OpenAPI';
+import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000' // Adjust based on your backend
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000')
 
-// Example API function
+export function initializeApi() {
+    OpenAPI.BASE = API_BASE_URL;
+    OpenAPI.WITH_CREDENTIALS = true;
+    axios.defaults.withCredentials = true;
+};
+
 export const fetchUsers = async () => {
   const response = await fetch(`${API_BASE_URL}/users`)
   if (!response.ok) {
@@ -11,7 +18,6 @@ export const fetchUsers = async () => {
   return response.json()
 }
 
-// Example query hook
 export const useUsers = () => {
   return useQuery({
     queryKey: ['users'],
@@ -19,7 +25,6 @@ export const useUsers = () => {
   })
 }
 
-// Health check function
 export const fetchHealthCheck = async () => {
   const response = await fetch(`${API_BASE_URL}/health`)
   if (!response.ok) {
@@ -32,6 +37,6 @@ export const useHealthCheck = () => {
   return useQuery({
     queryKey: ['health'],
     queryFn: fetchHealthCheck,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
   })
 } 

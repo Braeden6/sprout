@@ -36,7 +36,7 @@ function Home() {
     <div className="container mx-auto p-4" onClick={handleUserInteraction}>
       <audio 
         ref={audioRef}
-        src="/landing_voice.wav" 
+        src="/voices/landing.wav" 
         // loop 
         preload="auto"
       />

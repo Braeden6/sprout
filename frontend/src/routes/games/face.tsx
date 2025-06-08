@@ -6,6 +6,8 @@ import { useTimerStore } from '@/stores/timerStore';
 import { useHelpButtonStore } from '@/stores/helpButtonStore';
 import { DroppableAnswer } from '@/components/DroppableAnswer';
 import { DraggableItem } from '@/components/DraggableItem';
+import { DefaultService } from '@/api/generated';
+import SpeechBubble from '@/components/SpeechBubble';
 
 export const Route = createFileRoute('/games/face')({
     component: Face,
@@ -15,38 +17,18 @@ function Face() {
     const { timeLeft, startTimer } = useTimerStore();
     const { enableHelp } = useHelpButtonStore();
     const [faceImages, setFaceImage] = useState<HTMLImageElement[]>([]);
-    const [emotionOptions, setEmotionOptions] = useState<(string|null)[]>([
-        'happy',
-        'sad',
-        'angry',
-        'surprised'
-    ]);
+    const [emotionOptions, setEmotionOptions] = useState<(string|null)[]>();
     const [draggedEmotion, setDraggedEmotion] = useState<string|null>(null);
-    const [emotionPlaced, setEmotionPlaced] = useState<(string|null)[]>([
-        null,
-        null,
-        null,
-        null
-    ]);
+    const [emotionPlaced, setEmotionPlaced] = useState<(string|null)[]>([null, null, null,null]);
     const [shakeItem, setShakeItem] = useState<number | null>(null);
-    const actualEmotions = [
-        'surprised',
-        'angry',
-        'sad',
-        'happy'
-    ];
+    const [answer, setAnswer] = useState<string[]|null>(null);
 
-    // tech debt: get images/emotions/etc from backend
     useEffect(() => {
-        const imageUrls = [
-            '/shapes/blue_circle.png',
-            '/shapes/blue_oval.png', 
-            '/shapes/orange_star.png',
-            '/shapes/purple_rectangle.png'
-        ];
-
-        const loadImages = async () => {
-            const imagePromises = imageUrls.map(url => {
+        const initGame = async () => {
+            const response = await DefaultService.initGameGamesFaceInitGet();
+            setAnswer(response.emotions);
+            setEmotionOptions(response.emotion_options);
+            const imagePromises = response.image_paths.map(url => {
                 return new Promise<HTMLImageElement>((resolve, reject) => {
                     const img = new Image();
                     img.onload = () => resolve(img);
@@ -54,21 +36,20 @@ function Face() {
                     img.src = url;
                 });
             });
+            const loadedImages = await Promise.all(imagePromises);
+            setFaceImage(loadedImages);
+        }
+        initGame();
 
-            try {
-                const loadedImages = await Promise.all(imagePromises);
-                setFaceImage(loadedImages);
-            } catch (error) {
-                console.error('Failed to load images:', error);
-            }
-        };
+        
+
         startTimer(60 * 5);
-        loadImages();
+        // tech debt: get help button from backend
         enableHelp(3, () => {
             console.log("Help button clicked");
         });
 
-    }, [])
+    }, []);
 
     function handleDragStart(event: DragStartEvent) {
         setDraggedEmotion(event.active.id as string);
@@ -79,16 +60,16 @@ function Face() {
         const { active, over } = event;
 
         if (timeLeft > 0 && over) {
-            if (actualEmotions[over.id as number] === active.id as string) {
-                const emotionIndex = emotionOptions.indexOf(active.id as string);
+            if (answer?.[over.id as number] === active.id as string) {
+                const emotionIndex = emotionOptions?.indexOf(active.id as string);
                 setEmotionPlaced(prev => {
                     const newPlaced = [...prev];
                     newPlaced[over.id as number] = active.id as string;
                     return newPlaced;
                 });
                 setEmotionOptions(prev => {
-                    const newOptions = [...prev];
-                    newOptions[emotionIndex] = null;
+                    const newOptions = [...(prev ?? [])];
+                    newOptions[emotionIndex ?? 0] = null;
                     return newOptions;
                 });
             } else {
@@ -111,7 +92,7 @@ function Face() {
             <GameLayout showTimer>
                 <div className="grid grid-cols-4 gap-10 absolute top-[10vh] left-1/2 -translate-x-1/2 z-10 h-[100px] w-[80%]">
                     {
-                        emotionOptions.map((emotion, index) => (
+                        emotionOptions?.map((emotion, index) => (
                             emotion ? <DraggableItem key={index} id={emotion} className={`bg-blue-300 rounded-md h-[40px] flex text-center justify-center items-center text-2xl font-bold ${
                                         index % 2 === 0 ? 'self-start' : 'self-end'
                                     }`}
@@ -145,6 +126,27 @@ function Face() {
                     ))}
                 </div>
             </GameLayout>
+
+
+            <SpeechBubble
+                messages={[
+                { 
+                    text: "Match each character’s facial expression with a word from above.", 
+                    audioUrl: "/voices/games/face/start.wav"
+                },
+                { 
+                    text: "Match each character’s facial expression with a word from above. asdasdasdasdas", 
+                    audioUrl: "/voices/games/face/intro.wav"
+                }
+                
+                ]}
+                position={{ bottom: 100, left: 40 }}
+                showNavigation
+                characterImage="/characters/sprout_side.png" 
+                characterPosition="left"
+                size="large"
+                variant="primary"
+            />
 
             <DragOverlay>
                 {draggedEmotion && (

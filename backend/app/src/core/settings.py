@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     db_url: Optional[str] = "postgresql://postgres:postgres@localhost:5432/sprout"
     frontend_url: str = "http://localhost:5173"
+    api_url: str = "http://localhost:8000"
     
     google_api_key: str
     google_genai_use_vertexai: Optional[bool] = False
