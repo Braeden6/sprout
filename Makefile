@@ -10,11 +10,17 @@ setup:
 	cd .. && \
 	docker compose -f docker-compose.yaml up -d
 
-run:
+run-backend:
 	docker compose -f docker-compose.yaml up -d && \
 	source .venv/bin/activate && \
 	cd backend && \
 	uvicorn app.main:app --reload --host 0.0.0.0
+
+build-backend-docker:
+	cd backend && docker build -t sprout-backend .
+
+run-backend-docker:
+	docker run -p 8000:8000 sprout-backend
 
 sdk:
 	cd frontend && pnpm run generate-api
