@@ -9,6 +9,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 
 export type { GameState } from './models/GameState';
 export type { HTTPValidationError } from './models/HTTPValidationError';
+export type { User } from './models/User';
 export type { ValidationError } from './models/ValidationError';
 
 export { DefaultService } from './services/DefaultService';

@@ -39,17 +39,15 @@ function Face() {
             const loadedImages = await Promise.all(imagePromises);
             setFaceImage(loadedImages);
         }
+
         initGame();
-
-        
-
         startTimer(60 * 5);
         // tech debt: get help button from backend
         enableHelp(3, () => {
             console.log("Help button clicked");
         });
 
-    }, []);
+    }, [startTimer, enableHelp]);
 
     function handleDragStart(event: DragStartEvent) {
         setDraggedEmotion(event.active.id as string);

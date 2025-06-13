@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import { OpenAPI } from '@/api/generated/core/OpenAPI';
 import axios from 'axios';
 
@@ -8,35 +7,9 @@ export function initializeApi() {
     OpenAPI.BASE = API_BASE_URL;
     OpenAPI.WITH_CREDENTIALS = true;
     axios.defaults.withCredentials = true;
-};
-
-export const fetchUsers = async () => {
-  const response = await fetch(`${API_BASE_URL}/users`)
-  if (!response.ok) {
-    throw new Error('Failed to fetch users')
-  }
-  return response.json()
+    setAuthorizationHeader();
 }
 
-export const useUsers = () => {
-  return useQuery({
-    queryKey: ['users'],
-    queryFn: fetchUsers,
-  })
+export function setAuthorizationHeader() {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('session_token')}`;
 }
-
-export const fetchHealthCheck = async () => {
-  const response = await fetch(`${API_BASE_URL}/health`)
-  if (!response.ok) {
-    throw new Error('Health check failed')
-  }
-  return response.json()
-}
-
-export const useHealthCheck = () => {
-  return useQuery({
-    queryKey: ['health'],
-    queryFn: fetchHealthCheck,
-    refetchInterval: 30000,
-  })
-} 
