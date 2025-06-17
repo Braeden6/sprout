@@ -5,7 +5,6 @@ description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = [
     "asyncpg>=0.30.0",
-    "chatterbox-tts>=0.1.2",
     "fastapi>=0.115.12",
     "google-adk>=1.0.0",
     "google-genai>=1.20.0",
@@ -14,14 +13,11 @@ dependencies = [
     "psycopg2-binary>=2.9.10",
     "pydantic>=2.11.5",
     "pydantic-settings>=2.9.1",
-    "pydub>=0.25.1",
     "pyrr>=0.10.3",
-    "soundfile>=0.13.1",
     "sqlalchemy>=2.0.41",
     "sqlmodel>=0.0.24",
     "svg3d>=0.1.2",
     "svgwrite>=1.4.3",
-    "torchaudio>=2.6.0",
     "uvicorn>=0.34.2",
 ]
 
