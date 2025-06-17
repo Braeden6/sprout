@@ -7,8 +7,10 @@ class Settings(BaseSettings):
     db_url: Optional[str] = "postgresql://postgres:postgres@localhost:5432/sprout"
     
     # Google AI
+    google_api_key_tts: Optional[str] = None
     google_api_key: Optional[str] = None
     google_genai_use_vertexai: Optional[bool] = False
+    
     
     # Auth
     allowed_origins: Optional[str] = "http://localhost:5173" # can be comma separated list of origins

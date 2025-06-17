@@ -1,6 +1,6 @@
 import { DndContext, DragOverlay, type DragEndEvent, type DragOverEvent, type DragStartEvent } from '@dnd-kit/core';
 import { createFileRoute } from '@tanstack/react-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GameLayout } from '@/components/GameLayout';
 import { useTimerStore } from '@/stores/timerStore';
 import { useHelpButtonStore } from '@/stores/helpButtonStore';
@@ -8,10 +8,17 @@ import { DroppableAnswer } from '@/components/DroppableAnswer';
 import { DraggableItem } from '@/components/DraggableItem';
 import { DefaultService } from '@/api/generated';
 import SpeechBubble from '@/components/SpeechBubble';
+import html2canvas from 'html2canvas-pro';
+import { useSpeechBubbleStore } from '@/stores/speechBubbleStore';
 
 export const Route = createFileRoute('/games/face')({
     component: Face,
 })
+
+async function dataURLtoBlob(dataURL: string): Promise<Blob> {
+    const res = await fetch(dataURL);
+    return res.blob();
+}
 
 function Face() {
     const { timeLeft, startTimer } = useTimerStore();
@@ -22,6 +29,24 @@ function Face() {
     const [emotionPlaced, setEmotionPlaced] = useState<(string|null)[]>([null, null, null,null]);
     const [shakeItem, setShakeItem] = useState<number | null>(null);
     const [answer, setAnswer] = useState<string[]|null>(null);
+    const page = useRef<HTMLDivElement>(null);
+    const { addMessage, setInitialMessage, goToLastMessage } = useSpeechBubbleStore();
+
+    const getHelp = async (sessionId: string) => {
+        const canvas = await html2canvas(document.body);
+        const screenshot = canvas.toDataURL('image/png');
+        if (!screenshot) return;
+        const imageBlob = await dataURLtoBlob(screenshot);
+        const help = await DefaultService.getHelpGamesFaceSessionIdHelpPost(sessionId, {
+            image: imageBlob,
+        });
+        const audioBlob = await fetch(`data:audio/wav;base64,${help.audio}`).then(res => res.blob());
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+        addMessage({ text: help.text, audioUrl: audioUrl });
+        goToLastMessage();
+    }
 
     useEffect(() => {
         const initGame = async () => {
@@ -38,15 +63,15 @@ function Face() {
             });
             const loadedImages = await Promise.all(imagePromises);
             setFaceImage(loadedImages);
+            startTimer(60 * 5);
+            enableHelp(3, () => getHelp(response.session_id));
+            setInitialMessage({
+                text: "Match each character's facial expression with a word from above.",
+                audioUrl: "/voices/games/face/start.wav"
+            });
         }
 
         initGame();
-        startTimer(60 * 5);
-        // tech debt: get help button from backend
-        enableHelp(3, () => {
-            console.log("Help button clicked");
-        });
-
     }, [startTimer, enableHelp]);
 
     function handleDragStart(event: DragStartEvent) {
@@ -82,77 +107,68 @@ function Face() {
     }
 
     return (
-        <DndContext
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onDragOver={handleDragOver}
-        >
-            <GameLayout showTimer>
-                <div className="grid grid-cols-4 gap-10 absolute top-[10vh] left-1/2 -translate-x-1/2 z-10 h-[100px] w-[80%]">
-                    {
-                        emotionOptions?.map((emotion, index) => (
-                            emotion ? <DraggableItem key={index} id={emotion} className={`bg-blue-300 rounded-md h-[40px] flex text-center justify-center items-center text-2xl font-bold ${
-                                        index % 2 === 0 ? 'self-start' : 'self-end'
-                                    }`}
-                                >
-                                    {emotion?.charAt(0).toUpperCase() + emotion?.slice(1)}
+        <div ref={page}>
+            <DndContext
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragOver={handleDragOver}
+            >
+                <GameLayout showTimer>
+                    <div className="grid grid-cols-4 gap-10 absolute top-[10vh] left-1/2 -translate-x-1/2 z-10 h-[100px] w-[80%]">
+                        {
+                            emotionOptions?.map((emotion, index) => (
+                                emotion ? <DraggableItem key={index} id={emotion} className={`bg-blue-300 rounded-md h-[40px] flex text-center justify-center items-center text-2xl font-bold ${
+                                            index % 2 === 0 ? 'self-start' : 'self-end'
+                                        }`}
+                                    >
+                                        {emotion?.charAt(0).toUpperCase() + emotion?.slice(1)}
 
-                            </DraggableItem> :
-                            <div key={index} className="h-[40px]"/>
-                        ))
-                    }
-                </div>
-
-                <div className="absolute top-[40vh] left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-4 gap-10 w-[80%]">
-                    {faceImages.map((image, index) => (
-                        <DroppableAnswer 
-                            key={index} 
-                            id={index} 
-                            isEmpty={!emotionPlaced[index]} 
-                            shouldShake={shakeItem === index}
-                            className="flex flex-col w-[200px]"
-                        >
-                            <img key={index} src={image.src} alt="Face" className="h-[200px] w-full mb-10" />
-                            {
-                                emotionPlaced[index] ? 
-                                    <div className=" bg-blue-300 rounded-md h-[40px] flex text-center justify-center items-center text-2xl font-bold w-full">
-                                        {emotionPlaced[index]?.charAt(0).toUpperCase() + emotionPlaced[index]?.slice(1)}
-                                    </div> : 
-                                    <div className="bg-white rounded-md w-full h-[40px]"/>
-                            }
-                        </DroppableAnswer>
-                    ))}
-                </div>
-            </GameLayout>
-
-
-            <SpeechBubble
-                messages={[
-                { 
-                    text: "Match each character’s facial expression with a word from above.", 
-                    audioUrl: "/voices/games/face/start.wav"
-                },
-                { 
-                    text: "Match each character’s facial expression with a word from above. asdasdasdasdas", 
-                    audioUrl: "/voices/games/face/intro.wav"
-                }
-                
-                ]}
-                position={{ bottom: 100, left: 40 }}
-                showNavigation
-                characterImage="/characters/sprout_side.png" 
-                characterPosition="left"
-                size="large"
-                variant="primary"
-            />
-
-            <DragOverlay>
-                {draggedEmotion && (
-                    <div className="bg-blue-300 rounded-md h-[40px] flex text-center justify-center items-center text-2xl font-bold">
-                        {draggedEmotion?.charAt(0).toUpperCase() + draggedEmotion?.slice(1)}
+                                </DraggableItem> :
+                                <div key={index} className="h-[40px]"/>
+                            ))
+                        }
                     </div>
-                )}
-            </DragOverlay>
-        </DndContext>
+
+                    <div className="absolute top-[40vh] left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-4 gap-10 w-[80%]">
+                        {faceImages.map((image, index) => (
+                            <DroppableAnswer 
+                                key={index} 
+                                id={index} 
+                                isEmpty={!emotionPlaced[index]} 
+                                shouldShake={shakeItem === index}
+                                className="flex flex-col w-[200px]"
+                            >
+                                <img key={index} src={image.src} alt="Face" className="h-[200px] w-full mb-10" />
+                                {
+                                    emotionPlaced[index] ? 
+                                        <div className=" bg-blue-300 rounded-md h-[40px] flex text-center justify-center items-center text-2xl font-bold w-full">
+                                            {emotionPlaced[index]?.charAt(0).toUpperCase() + emotionPlaced[index]?.slice(1)}
+                                        </div> : 
+                                        <div className="bg-white rounded-md w-full h-[40px]"/>
+                                }
+                            </DroppableAnswer>
+                        ))}
+                    </div>
+                </GameLayout>
+
+
+                <SpeechBubble
+                    position={{ bottom: 100, left: 40 }}
+                    showNavigation
+                    characterImage="/characters/sprout_side.png" 
+                    characterPosition="left"
+                    size="large"
+                    variant="primary"
+                />
+
+                <DragOverlay>
+                    {draggedEmotion && (
+                        <div className="bg-blue-300 rounded-md h-[40px] flex text-center justify-center items-center text-2xl font-bold">
+                            {draggedEmotion?.charAt(0).toUpperCase() + draggedEmotion?.slice(1)}
+                        </div>
+                    )}
+                </DragOverlay>
+            </DndContext>
+        </div>
     )
 }

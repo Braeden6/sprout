@@ -7,7 +7,9 @@ export { CancelablePromise, CancelError } from './core/CancelablePromise';
 export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
+export type { Body_get_help_games_face__session_id__help_post } from './models/Body_get_help_games_face__session_id__help_post';
 export type { GameState } from './models/GameState';
+export type { HelpResponse } from './models/HelpResponse';
 export type { HTTPValidationError } from './models/HTTPValidationError';
 export type { User } from './models/User';
 export type { ValidationError } from './models/ValidationError';

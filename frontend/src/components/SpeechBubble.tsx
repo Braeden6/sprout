@@ -2,10 +2,9 @@ import React, { useRef, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Volume2 } from 'lucide-react';
-import type { SpeechMessage } from '@/stores/speechBubbleStore';
+import { useSpeechBubbleStore } from '@/stores/speechBubbleStore';
 
 interface SpeechBubbleProps {
-  messages: SpeechMessage[];
   position?: {
     top?: number | string;
     left?: number | string;
@@ -27,7 +26,6 @@ interface SpeechBubbleProps {
 }
 
 const SpeechBubble: React.FC<SpeechBubbleProps> = ({
-  messages,
   position = {},
   characterImage,
   characterPosition = 'left',
@@ -43,11 +41,7 @@ const SpeechBubble: React.FC<SpeechBubbleProps> = ({
 }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
-  const hasMultipleMessages = messages.length > 1;
-  const canNavigatePrev = currentMessageIndex > 0;
-  const canNavigateNext = currentMessageIndex < messages.length - 1;
-
+  const { messages, currentMessageIndex, isNextMessageAvailable, isPreviousMessageAvailable, nextMessage, previousMessage } = useSpeechBubbleStore();
   const getScale = () => {
     if (typeof size === 'number') return size;
     switch (size) {
@@ -65,7 +59,7 @@ const SpeechBubble: React.FC<SpeechBubbleProps> = ({
   const characterHeight = Math.min(baseWidth * 0.4, 120 * scale);
 
   const getFontSizeClass = () => {
-    const textLength = messages[currentMessageIndex].text.length;
+    const textLength = messages[currentMessageIndex]?.text.length || 0;
     
     if (size === 'small') {
       if (textLength > 100) return 'text-xs';
@@ -187,7 +181,7 @@ const SpeechBubble: React.FC<SpeechBubbleProps> = ({
   };
 
   const playAudio = async () => {
-    if (!messages[currentMessageIndex].audioUrl || !audioRef.current) return;
+    if (!messages[currentMessageIndex]?.audioUrl || !audioRef.current) return;
 
     try {
       setIsPlaying(true);
@@ -203,16 +197,8 @@ const SpeechBubble: React.FC<SpeechBubbleProps> = ({
     setIsPlaying(false);
   };
 
-  const handleNavigate = (direction: 'next' | 'prev') => {
-    if (direction === 'next') {
-      setCurrentMessageIndex((currentMessageIndex + 1) % messages.length);
-    } else {
-      setCurrentMessageIndex((currentMessageIndex - 1 + messages.length) % messages.length);
-    }
-  };
-
   useEffect(() => {
-    if (autoPlay && messages[currentMessageIndex].audioUrl) {
+    if (autoPlay && messages[currentMessageIndex]?.audioUrl) {
       playAudio();
     }
   }, [currentMessageIndex, autoPlay]);
@@ -240,7 +226,7 @@ const SpeechBubble: React.FC<SpeechBubbleProps> = ({
       <div
         className="absolute cursor-pointer group"
         style={styles.bubble}
-        onClick={messages[currentMessageIndex].audioUrl ? playAudio : undefined}
+        onClick={messages[currentMessageIndex]?.audioUrl ? playAudio : undefined}
       >
         {/* SVG Background */}
         <svg
@@ -271,11 +257,11 @@ const SpeechBubble: React.FC<SpeechBubbleProps> = ({
             bottom: '35%',
           }}
         >
-          {messages[currentMessageIndex].text}
+          {messages[currentMessageIndex]?.text}
         </div>
 
         {/* Audio Indicator */}
-        {messages[currentMessageIndex].audioUrl && (
+        {messages[currentMessageIndex]?.audioUrl && (
           <div className="absolute top-4 right-4">
             <Volume2 
               className={cn(
@@ -287,7 +273,7 @@ const SpeechBubble: React.FC<SpeechBubbleProps> = ({
         )}
 
         {/* Navigation Controls */}
-        {showNavigation && hasMultipleMessages && (
+        {showNavigation && messages.length > 1 && (
           <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 flex gap-1">
             <Button
               size="sm"
@@ -295,9 +281,9 @@ const SpeechBubble: React.FC<SpeechBubbleProps> = ({
               className="h-6 w-6 p-0 text-white hover:bg-white/20"
               onClick={(e) => {
                 e.stopPropagation();
-                handleNavigate('prev');
+                previousMessage();
               }}
-              disabled={!canNavigatePrev}
+              disabled={!isPreviousMessageAvailable()}
             >
               <ChevronLeft className="w-3 h-3" />
             </Button>
@@ -312,9 +298,9 @@ const SpeechBubble: React.FC<SpeechBubbleProps> = ({
               className="h-6 w-6 p-0 text-white hover:bg-white/20"
               onClick={(e) => {
                 e.stopPropagation();
-                handleNavigate('next');
+                nextMessage();
               }}
-              disabled={!canNavigateNext}
+              disabled={!isNextMessageAvailable()}
             >
               <ChevronRight className="w-3 h-3" />
             </Button>
@@ -323,10 +309,10 @@ const SpeechBubble: React.FC<SpeechBubbleProps> = ({
       </div>
 
       {/* Audio Element */}
-      {messages[currentMessageIndex].audioUrl && (
+      {messages[currentMessageIndex]?.audioUrl && (
         <audio
           ref={audioRef}
-          src={messages[currentMessageIndex].audioUrl}
+          src={messages[currentMessageIndex]?.audioUrl}
           onEnded={handleAudioEnded}
           preload="metadata"
         />

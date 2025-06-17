@@ -11,24 +11,10 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as GameImport } from './routes/game'
-import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
 import { Route as GamesFaceImport } from './routes/games/face'
 
 // Create/Update Routes
-
-const GameRoute = GameImport.update({
-  id: '/game',
-  path: '/game',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const AboutRoute = AboutImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => rootRoute,
-} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
@@ -53,20 +39,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutImport
-      parentRoute: typeof rootRoute
-    }
-    '/game': {
-      id: '/game'
-      path: '/game'
-      fullPath: '/game'
-      preLoaderRoute: typeof GameImport
-      parentRoute: typeof rootRoute
-    }
     '/games/face': {
       id: '/games/face'
       path: '/games/face'
@@ -81,46 +53,36 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/game': typeof GameRoute
   '/games/face': typeof GamesFaceRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/game': typeof GameRoute
   '/games/face': typeof GamesFaceRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/game': typeof GameRoute
   '/games/face': typeof GamesFaceRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/game' | '/games/face'
+  fullPaths: '/' | '/games/face'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/game' | '/games/face'
-  id: '__root__' | '/' | '/about' | '/game' | '/games/face'
+  to: '/' | '/games/face'
+  id: '__root__' | '/' | '/games/face'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
-  GameRoute: typeof GameRoute
   GamesFaceRoute: typeof GamesFaceRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
-  GameRoute: GameRoute,
   GamesFaceRoute: GamesFaceRoute,
 }
 
@@ -135,19 +97,11 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/about",
-        "/game",
         "/games/face"
       ]
     },
     "/": {
       "filePath": "index.tsx"
-    },
-    "/about": {
-      "filePath": "about.tsx"
-    },
-    "/game": {
-      "filePath": "game.tsx"
     },
     "/games/face": {
       "filePath": "games/face.tsx"
