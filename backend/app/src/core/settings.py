@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     # Auth
     allowed_origins: Optional[str] = "http://localhost:5173" # can be comma separated list of origins
     
+    app_name: Optional[str] = "sprout"
+    
     class Config:
         env_file = ".env"
         env_file_encoding = 'utf-8'

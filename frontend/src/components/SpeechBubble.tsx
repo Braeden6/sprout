@@ -246,18 +246,14 @@ const SpeechBubble: React.FC<SpeechBubbleProps> = ({
         {/* Text Content */}
         <div
           className={cn(
-            "absolute flex items-center justify-center text-center font-medium text-white p-2 break-words leading-tight",
+            "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center font-medium text-white break-words leading-tight overflow-y-auto h-[80%] w-[60%]",
             getFontSizeClass(),
             textClassName
           )}
-          style={{
-            top: '35%',
-            left: '20%',
-            right: '12%',
-            bottom: '35%',
-          }}
         >
-          {messages[currentMessageIndex]?.text}
+          <div className="w-full text-center">
+            {messages[currentMessageIndex]?.text}
+          </div>
         </div>
 
         {/* Audio Indicator */}

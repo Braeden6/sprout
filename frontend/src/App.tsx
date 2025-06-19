@@ -6,6 +6,7 @@ import { AuthPopup } from './components/AuthPopup'
 import { useAuthStore } from './stores/authStore'
 import { useEffect } from 'react';
 import Home from '@/routes/index';
+import Loading from './components/Loading';
 
 const router = createRouter({ routeTree })
 
@@ -53,6 +54,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthWrapper>
         <RouterProvider router={router} />
+        <Loading />
       </AuthWrapper>
     </QueryClientProvider>
   )

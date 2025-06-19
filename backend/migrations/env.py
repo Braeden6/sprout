@@ -6,6 +6,7 @@ from app.src.core.settings import settings
 # from app.src.models import * # noqa
 from app.src.core.utils import get_all_models
 from sqlmodel import SQLModel
+from app.src.features.games.face.models import *
 
 config = context.config
 

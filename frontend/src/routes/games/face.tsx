@@ -6,10 +6,12 @@ import { useTimerStore } from '@/stores/timerStore';
 import { useHelpButtonStore } from '@/stores/helpButtonStore';
 import { DroppableAnswer } from '@/components/DroppableAnswer';
 import { DraggableItem } from '@/components/DraggableItem';
-import { DefaultService } from '@/api/generated';
+import { GamesFaceService } from '@/api/generated';
 import SpeechBubble from '@/components/SpeechBubble';
 import html2canvas from 'html2canvas-pro';
 import { useSpeechBubbleStore } from '@/stores/speechBubbleStore';
+import { Button } from '@/components/ui/button';
+import useLoadingStore from '@/stores/loadingStore';
 
 export const Route = createFileRoute('/games/face')({
     component: Face,
@@ -21,10 +23,12 @@ async function dataURLtoBlob(dataURL: string): Promise<Blob> {
 }
 
 function Face() {
+    const { isLoading, setIsLoading } = useLoadingStore();
     const { timeLeft, startTimer } = useTimerStore();
     const { enableHelp } = useHelpButtonStore();
     const [faceImages, setFaceImage] = useState<HTMLImageElement[]>([]);
     const [emotionOptions, setEmotionOptions] = useState<(string|null)[]>();
+    const [sessionId, setSessionId] = useState<string|null>(null);
     const [draggedEmotion, setDraggedEmotion] = useState<string|null>(null);
     const [emotionPlaced, setEmotionPlaced] = useState<(string|null)[]>([null, null, null,null]);
     const [shakeItem, setShakeItem] = useState<number | null>(null);
@@ -32,25 +36,36 @@ function Face() {
     const page = useRef<HTMLDivElement>(null);
     const { addMessage, setInitialMessage, goToLastMessage } = useSpeechBubbleStore();
 
-    const getHelp = async (sessionId: string) => {
+    const executeGameAction = async (
+        sessionId: string, 
+        sdkFunction: (sessionId: string, requestBody: { image: Blob }) => Promise<{ audio: string; text: string }>
+    ) => {
         const canvas = await html2canvas(document.body);
         const screenshot = canvas.toDataURL('image/png');
         if (!screenshot) return;
         const imageBlob = await dataURLtoBlob(screenshot);
-        const help = await DefaultService.getHelpGamesFaceSessionIdHelpPost(sessionId, {
-            image: imageBlob,
-        });
-        const audioBlob = await fetch(`data:audio/wav;base64,${help.audio}`).then(res => res.blob());
+        setIsLoading(true);
+        const response = await sdkFunction(sessionId, { image: imageBlob });
+        const audioBlob = await fetch(`data:audio/wav;base64,${response.audio}`).then(res => res.blob());
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
         audio.play();
-        addMessage({ text: help.text, audioUrl: audioUrl });
+        addMessage({ text: response.text, audioUrl: audioUrl });
         goToLastMessage();
+        setIsLoading(false);
+    }
+
+    const getHelp = async (sessionId: string) => {
+        await executeGameAction(sessionId, GamesFaceService.getHelpGamesFaceSessionIdHelpPost);
+    }
+
+    const finishGame = async (sessionId: string) => {
+        await executeGameAction(sessionId, GamesFaceService.finishGameGamesFaceSessionIdFinishPost);
     }
 
     useEffect(() => {
         const initGame = async () => {
-            const response = await DefaultService.initGameGamesFaceInitGet();
+            const response = await GamesFaceService.initGameGamesFaceInitGet();
             setAnswer(response.emotions);
             setEmotionOptions(response.emotion_options);
             const imagePromises = response.image_paths.map(url => {
@@ -63,6 +78,7 @@ function Face() {
             });
             const loadedImages = await Promise.all(imagePromises);
             setFaceImage(loadedImages);
+            setSessionId(response.session_id);
             startTimer(60 * 5);
             enableHelp(3, () => getHelp(response.session_id));
             setInitialMessage({
@@ -95,7 +111,13 @@ function Face() {
                     newOptions[emotionIndex ?? 0] = null;
                     return newOptions;
                 });
+                if (sessionId) {
+                    GamesFaceService.matchEmotionGamesFaceSessionIdMatchPost(sessionId, active.id as string, true);
+                }
             } else {
+                if (sessionId) {
+                    GamesFaceService.matchEmotionGamesFaceSessionIdMatchPost(sessionId, active.id as string, false);
+                }
                 setShakeItem(over.id as number);
                 setTimeout(() => setShakeItem(null), 600);
             }
@@ -149,8 +171,13 @@ function Face() {
                             </DroppableAnswer>
                         ))}
                     </div>
-                </GameLayout>
 
+                    <Button 
+                        className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-purple-900 px-10"
+                        onClick={() => finishGame(sessionId ?? "")}
+                        disabled={isLoading || !sessionId || emotionPlaced.some(emotion => emotion === null)}
+                    >Finish</Button>
+                </GameLayout>
 
                 <SpeechBubble
                     position={{ bottom: 100, left: 40 }}
