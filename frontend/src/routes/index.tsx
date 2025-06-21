@@ -1,64 +1,43 @@
+import SpeechBubble from '@/components/SpeechBubble';
+import { useSpeechBubbleStore } from '@/stores/speechBubbleStore';
 import { createFileRoute } from '@tanstack/react-router';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 export const Route = createFileRoute('/')({
   component: Home,
 })
 
 function Home() {
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const { addMessage, clearMessages } = useSpeechBubbleStore();
 
   useEffect(() => {
-    const playAudio = async () => {
-      if (audioRef.current) {
-        try {
-          await audioRef.current.play();
-        } catch (error) {
-          console.log('Audio autoplay blocked by browser:', error);
-        }
-      }
-    };
+    clearMessages();
+    addMessage({
+        text: "Hello! Welcome to Boom Land. My name is Sprout, and I am your new adventure friend. Here in Boom Land, we are secretly protecting the existing dinosaurs. To help us grow, you will play games, collect dinosaur eggs, and help nurturing the dinosaurs.",
+        audioUrl: "/voices/landing_intro.wav"
+    });
+    addMessage({
+      text: "Before we begin, let's create your own dinosaur.",
+      audioUrl: "/voices/landing_create.wav"
+  });
 
-    playAudio();
-  }, []);
+  }, [clearMessages, addMessage]);
 
-  const handleUserInteraction = async () => {
-    if (audioRef.current) {
-      try {
-        await audioRef.current.play();
-      } catch (error) {
-        console.log('Error playing audio:', error);
-      }
-    }
-  };
+
 
   return (
-    <div className="fixed inset-0 w-full h-full" onClick={handleUserInteraction}>
-      <audio 
-        ref={audioRef}
-        src="/voices/landing.wav" 
-        // loop 
-        preload="auto"
-      />
-
+    <div className="fixed inset-0 w-full h-full">
       <img 
         src="/landing_bg.png" 
         alt="Speech" 
         className="absolute inset-0 w-full h-full object-cover" 
       />
-      <div className="absolute top-[15vh] left-[60vw] z-10 w-[380px] h-[180px]">
-        <img 
-          src="/speech_dubble.svg" 
-          alt="Speech" 
-          className="w-full h-full -translate-x-[20px]" 
-        />
-        <div className="absolute inset-0 flex items-center justify-center ps-15">
-          <p className="text-md">
-            Hello! Welcome to Boom Land. My name is Sprout, and I am your new adventure friend. 
-            Here in Boom Land, we are secretly protecting the existing dinosaurs. To help us grow, you will play games, collect dinosaur eggs, and help nurturing the dinosaurs.
-          </p>
-        </div>
-      </div>
+      <SpeechBubble
+          position={{ bottom: '80%', left: '60%' }}
+          showNavigation
+          size="xlarge"
+          variant="primary"
+      />
     </div>
   )
 } 

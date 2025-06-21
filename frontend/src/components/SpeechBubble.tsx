@@ -14,7 +14,7 @@ interface SpeechBubbleProps {
   };
   characterImage?: string;
   characterPosition?: 'left' | 'right' | 'top' | 'bottom';
-  size?: 'small' | 'medium' | 'large' | number;
+  size?: 'small' | 'medium' | 'large' | 'xlarge' | number;
   className?: string;
   textClassName?: string;
   maxWidth?: number;
@@ -48,6 +48,7 @@ const SpeechBubble: React.FC<SpeechBubbleProps> = ({
       case 'small': return 0.6;
       case 'medium': return 1;
       case 'large': return 1.4;
+      case 'xlarge': return 2.5;
       default: return 1;
     }
   };

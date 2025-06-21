@@ -9,6 +9,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 
 export type { Body_finish_game_games_face__session_id__finish_post } from './models/Body_finish_game_games_face__session_id__finish_post';
 export type { Body_get_help_games_face__session_id__help_post } from './models/Body_get_help_games_face__session_id__help_post';
+export type { GameReviewData } from './models/GameReviewData';
 export type { GameState } from './models/GameState';
 export type { HelpResponse } from './models/HelpResponse';
 export type { HTTPValidationError } from './models/HTTPValidationError';
@@ -17,3 +18,4 @@ export type { ValidationError } from './models/ValidationError';
 
 export { DefaultService } from './services/DefaultService';
 export { GamesFaceService } from './services/GamesFaceService';
+export { GuardianService } from './services/GuardianService';

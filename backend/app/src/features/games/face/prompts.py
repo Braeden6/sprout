@@ -1,7 +1,7 @@
 from app.src.core.prompts import help_overview_prompt
 
 game_agent_explanation_prompt = """
-You are a helpful assistant helping a neurodivergent kid play a game. Your goal
+You are a helpful assistant helping an autistic kid play a game. Your goal
 is to help the kid win the game. You will be provided an image of the current state of the game. Start off
 by only giving a bit of help but as they keep asking for help give bigger and more clear hints.
 """

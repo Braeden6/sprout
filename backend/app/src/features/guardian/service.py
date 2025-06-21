@@ -1,9 +1,11 @@
+from app.src.features.games.face.models import FaceGameData
 from google.adk.runners import Runner
 
 from app.src.core.settings import settings
 from google.adk.sessions import DatabaseSessionService
 from google.genai import types
-from app.src.features.guardian.agents import build_game_summarizer_agent
+from app.src.features.guardian.agents import build_game_summarizer_agent, build_meta_analysis_agent
+from typing import List
 
 class GuardianService:
     def __init__(self):
@@ -35,4 +37,30 @@ class GuardianService:
         ):
             return event.content.parts[0].text or ""
         
+    async def generate_game_summary(
+        self,
+        # tech debt: better abstraction for different games
+        games: List[FaceGameData],
+        user_id: str,
+    ) -> str:
+        new_session = await self.database_session_service.create_session(
+            user_id=user_id,
+            app_name=settings.app_name,
+        )
+        runner = Runner(
+            agent=build_meta_analysis_agent(),
+            app_name=settings.app_name,
+            session_service=self.database_session_service
+        )
+        new_message = types.Content(
+            role='user', 
+            parts=[types.Part( text="Please analyze the games. here is the games data: " +  str(games))]
+        )
+        async for event in runner.run_async(
+            user_id=user_id,
+            session_id=new_session.id,
+            new_message=new_message,
+        ):
+            return event.content.parts[0].text or ""
+
     

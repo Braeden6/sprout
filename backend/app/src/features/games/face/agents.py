@@ -7,5 +7,5 @@ face_help_agent = Agent(
     name="face_help_assistant",
     model=MODEL_NAME,
     instruction=build_face_game_prompt(),
-    description="An assistant helping a neurodivergent kid play a game to match face to emotions.",
+    description="An assistant helping autistic kid play a game to match face to emotions.",
 ) 

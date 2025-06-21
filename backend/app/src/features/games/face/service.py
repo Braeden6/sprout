@@ -110,6 +110,16 @@ class FaceGameService:
         result = await self.db_session.execute(query)
         return result.scalar_one_or_none()
     
+    async def get_all_game_data(
+        self,
+        current_user: User
+    ) -> list[FaceGameData]:
+        query = select(FaceGameData).where(
+            FaceGameData.user_id == current_user.id
+        )
+        result = await self.db_session.execute(query)
+        return result.scalars().all()
+    
     async def _generate_game_summary_background(
         self,
         session_id: str,
@@ -136,7 +146,6 @@ class FaceGameService:
             
             if fresh_game_data:
                 fresh_game_data.game_summary = game_summary
-                print(fresh_game_data.game_summary)
                 attributes.flag_modified(fresh_game_data, "game_summary")
                 await db_session.commit()
     
@@ -164,6 +173,10 @@ class FaceGameService:
             current_user.id,
             game_data
         )
+        # tech debt: organize into repo pattern
+        game_data.end_time = datetime.now()
+        attributes.flag_modified(game_data, "end_time")
+        await self.db_session.commit()
         return HelpResponse(text=text, audio=audio_base64)
     
     async def update_game_data(
@@ -214,7 +227,7 @@ class FaceGameService:
             types.Content(
                 role="user",
                 parts=[
-                    types.Part.from_text(text=f"""You are voicing a character for a neurodivergent kids game. 
+                    types.Part.from_text(text=f"""You are voicing a character for a autistic kids game. 
                                          Speak as clearly and friendly as possible. Say the following exactly:
                                          {text}"""),
                 ],

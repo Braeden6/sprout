@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from app.src.core.settings import settings
 from app.src.core.auth import get_current_user
 from app.src.features.games.face.endpoints import router as face_game_router
+from app.src.features.guardian.endpoints import router as guardian_router
 
 load_dotenv()
 
@@ -19,7 +20,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 app.include_router(face_game_router)
+app.include_router(guardian_router)
 
 @app.get('/auth/new')
 async def new_auth():
